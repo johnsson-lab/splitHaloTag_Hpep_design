@@ -1,0 +1,147 @@
+<ROSETTASCRIPTS>
+	
+<SCOREFXNS>
+
+	<ScoreFunction name="sfxn_stand" weights="ref2015">
+		<Reweight scoretype="atom_pair_constraint" weight="10"/> 
+		<Reweight scoretype="angle_constraint" weight="10"/> 
+		<Reweight scoretype="dihedral_constraint" weight="10"/> 
+	</ScoreFunction>
+	
+	<ScoreFunction name="sfxn_soft" weights="ref2015_soft">
+		<Reweight scoretype="atom_pair_constraint" weight="10"/> 
+		<Reweight scoretype="angle_constraint" weight="10"/> 
+		<Reweight scoretype="dihedral_constraint" weight="10"/> 
+	</ScoreFunction>
+	
+</SCOREFXNS>
+
+<RESIDUE_SELECTORS>
+	
+	<Index name="Nterm" resnums="1-3"/>
+	<Index name="Cterm" resnums="281-283"/>
+	<And name="termini" selectors="Nterm,Cterm"/>
+	<Not name="not_termini" selector="termini"/>
+	
+</RESIDUE_SELECTORS>
+
+<TASKOPERATIONS>
+	
+	<ReadResfile name="res" filename="in/resfile"/>
+	
+	<ExtraRotamersGeneric name="extra_rot"
+	ex1="true" ex2="true" ex3="false" ex4="false"
+	ex1aro="true" ex2aro="true" ex1aro_exposed="false" ex2aro_exposed="false"
+	extrachi_cutoff="0"/> 
+	
+	<OperateOnResidueSubset name="to_Nterm" selector="Nterm">
+		<RestrictToRepackingRLT/>
+	</OperateOnResidueSubset>
+	
+	<OperateOnResidueSubset name="to_Cterm" selector="Cterm">
+		<RestrictToRepackingRLT/>
+	</OperateOnResidueSubset>
+	
+	<OperateOnResidueSubset name="to_not_termini" selector="not_termini">
+		<PreventRepackingRLT/>
+	</OperateOnResidueSubset>
+	
+</TASKOPERATIONS>
+
+<FILTERS>
+	
+	<Ddg name="ddG" scorefxn="sfxn_stand" threshold="-15" repeats="3" jump="3" 
+		repack_bound="false"/>
+	
+	<Sasa name="sasa" threshold="800" jump="3"/>
+	
+	<Rmsd name="rmsd" confidence="0"/>
+	
+	<CompoundStatement name="ddg_sasa">
+		<AND filter_name="ddG"/>
+		<AND filter_name="sasa"/>
+	</CompoundStatement>
+	
+	<ScoreType name="tot_score" 
+		threshold="-250" scorefxn="sfxn_stand" confidence="1" />
+		
+	<ScoreType name="tot_score_soft" 
+		threshold="-250" scorefxn="sfxn_soft" confidence="1" />
+	
+</FILTERS>
+
+<MOVERS>
+
+	<AddConstraints name="constraint" >
+		<FileConstraintGenerator name="gen_my_csts" filename="in/chemical_bond.cst" />
+	</AddConstraints>
+	
+	<DeclareBond name="ligand_bond" res1="246" res2="284" atom1="CG" atom2="O1"/>
+		
+	<AtomTree name="set_foldtree" fold_tree_file="in/foldtree" />
+		
+	<SetTorsion name="perturb_Nterm">
+		<Torsion residue="1" torsion_name="rama" angle="rama_biased"/>
+		<Torsion residue="2" torsion_name="rama" angle="rama_biased"/>
+		<Torsion residue="3" torsion_name="rama" angle="rama_biased"/>
+	</SetTorsion>
+	
+	<SetTorsion name="perturb_Cterm">
+		<Torsion residue="281" torsion_name="rama" angle="rama_biased"/>
+		<Torsion residue="282" torsion_name="rama" angle="rama_biased"/>
+		<Torsion residue="283" torsion_name="rama" angle="rama_biased"/>
+	</SetTorsion>
+	
+	<FastRelax name="relax_term" scorefxn="sfxn_stand"
+		disable_design="true"
+		task_operations="to_Nterm,to_Cterm,to_not_termini,extra_rot"
+		repeats="5"
+		cst_file="in/chemical_bond.cst"
+		ramp_down_constraints="false" bondangle="false" bondlength="false">
+		<MoveMap name="mov1" bb="false" chi="false" jump="false" >
+			<Span begin="1" end="3" chi="true" bb="true" bondangle="false" 
+				bondlength="false" />
+			<Span begin="281" end="283" chi="true" bb="true" bondangle="false" 
+				bondlength="false" />
+		</MoveMap>
+	</FastRelax>
+
+	<Docking name="docking" score_high="sfxn_soft" fullatom="1" local_refine="1" 
+		jumps="1" optimize_fold_tree="true" conserve_foldtree="true"/> 
+
+	<FastDesign name="design" scorefxn="sfxn_stand"
+		disable_design="false"
+		task_operations="extra_rot,res"
+		repeats="3" relaxscript="in/InterfaceDesign2019_mod.txt"
+		cst_file="in/chemical_bond.cst" cartesian="false"
+		ramp_down_constraints="false" bondangle="false"
+		bondlength="false"
+		min_type="lbfgs_armijo_nonmonotone">
+		<MoveMap name="mov2" bb="true" chi="true" jump="false" >
+			<Jump number="3" setting="true" />
+			<Span begin="1" end="299"
+				chi="true" bb="true" bondangle="false" bondlength="false" />
+		</MoveMap>
+	</FastDesign>
+
+</MOVERS>
+ 
+<PROTOCOLS>
+
+	<Add mover="constraint"/>
+	<Add mover="ligand_bond"/>
+	<Add mover="set_foldtree"/>
+	<Add mover="perturb_Nterm"/>
+	<Add mover="perturb_Cterm"/>
+	<Add mover="relax_term"/>
+	<Add mover="docking"/>
+	<Add filter="tot_score_soft"/>
+	<Add mover="design"/>
+	<Add filter="ddg_sasa"/>
+	<Add filter="ddG"/>
+	<Add filter="sasa"/>
+	<Add filter="rmsd"/>
+	<Add filter="tot_score"/>
+</PROTOCOLS>
+
+</ROSETTASCRIPTS>

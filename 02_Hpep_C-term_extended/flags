@@ -1,0 +1,22 @@
+-nstruct 10000
+
+-run:chain A
+-use_clusters false
+-hb_srbb 1.0
+-find_neighbors
+
+-use_input_sc
+-no_optH false
+-flip_HNQ
+-ex1
+-ex2
+-extrachi_cutoff 3
+-ex1aro
+-ex2aro
+-packing:linmem_ig 10
+
+-renumber_pdb true
+-in:file:fullatom
+-in:file:s input/split_halo.pdb
+-remodel:blueprint input/resfile
+--out:path:all output

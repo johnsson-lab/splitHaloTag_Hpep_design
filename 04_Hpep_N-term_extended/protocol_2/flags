@@ -1,0 +1,9 @@
+-nstruct 10000
+
+-parser:protocol input/design_pep.xml
+
+-in:file:extra_res_path input/params
+
+-in:file:fullatom
+-in:file:s input/split_halo.pdb
+-out:path:all output

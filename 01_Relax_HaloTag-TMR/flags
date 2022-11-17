@@ -1,0 +1,23 @@
+-nstruct 10000
+
+-cst_fa_file input/chemical_bond.cst
+-relax:ramp_constraints false
+-constraints:cst_fa_weight 1
+-relax:constrain_relax_to_start_coords
+
+-in:file:extra_res_path input/params
+
+-ex1
+-ex2
+-use_input_sc
+-flip_HNQ
+-no_optH false
+-renumber_pdb true
+-auto_setup_metals true
+-extrachi_cutoff 16
+-ex1aro 
+-ex2aro 
+
+-in:file:fullatom
+-in:file:s input/6Y7A.pdb
+--out:path:all output
