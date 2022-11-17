@@ -1,1 +1,1 @@
-# splitHaloTag_Hpep_design
+# splitHaloTag Hpep design
